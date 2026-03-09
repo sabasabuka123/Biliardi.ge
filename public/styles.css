@@ -1,0 +1,22 @@
+:root {
+  --bg: #060b06;
+  --card: #101710;
+  --green: #00b140;
+  --text: #ffffff;
+  --muted: #b7d6b7;
+}
+* { box-sizing: border-box; font-family: Arial, sans-serif; }
+body { margin: 0; background: radial-gradient(circle at top, #113311, var(--bg)); color: var(--text); }
+header { text-align: center; padding: 30px 10px; border-bottom: 1px solid #1e3a1e; }
+main { max-width: 1100px; margin: 20px auto; padding: 0 12px; }
+.card { background: var(--card); border: 1px solid #194719; border-radius: 16px; padding: 16px; margin-bottom: 18px; box-shadow: 0 10px 30px #00000066; }
+.hidden { display: none; }
+.grid2 { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+form { display: flex; flex-direction: column; gap: 8px; }
+input, button { padding: 10px 12px; border-radius: 10px; border: 1px solid #2f5a2f; }
+input { background: #0e110e; color: white; }
+button { background: var(--green); color: #011501; font-weight: 700; cursor: pointer; }
+button:hover { filter: brightness(1.1); }
+.hall, .res { border: 1px solid #2c4d2c; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+small, .muted { color: var(--muted); }
+.toolbar { display: flex; gap: 10px; margin-bottom: 12px; }
