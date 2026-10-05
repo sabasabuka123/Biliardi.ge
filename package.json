@@ -1,0 +1,6 @@
+{
+  "name": "biliardi-security-tests",
+  "private": true,
+  "scripts": { "test": "node --test tests/owner-dom.cjs", "test:browser": "node tests/owner-xss.cjs" },
+  "devDependencies": { "jsdom": "26.1.0" }
+}

@@ -2,12 +2,13 @@
 import json
 import math
 import secrets
+import re
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlparse, unquote
 import hashlib
 
 ROOT = Path(__file__).parent
@@ -106,6 +107,20 @@ def init_db():
     conn.close()
 
 
+def parse_reservation_time(value):
+    """Accept timezone-qualified RFC3339 timestamps, including browser UTC Z."""
+    if not isinstance(value, str) or not re.fullmatch(
+        r'\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:[Zz]|[+-]\d{2}:\d{2})', value
+    ):
+        raise ValueError('Expected RFC3339 timestamp with timezone')
+    normalized = value[:10] + 'T' + value[11:]
+    if normalized[-1] in 'Zz':
+        normalized = normalized[:-1] + '+00:00'
+    elif int(normalized[-5:-3]) > 23 or int(normalized[-2:]) > 59:
+        raise ValueError('Invalid timezone offset')
+    return datetime.fromisoformat(normalized).astimezone(timezone.utc)
+
+
 def haversine(lat1, lon1, lat2, lon2):
     r = 6371
     d_lat = math.radians(lat2 - lat1)
@@ -157,8 +172,15 @@ class Handler(BaseHTTPRequestHandler):
         return self.handle_api_post(parsed.path)
 
     def serve_static(self, path):
-        file_path = PUBLIC_DIR / ('index.html' if path in ('', '/') else path.lstrip('/'))
-        if not file_path.exists() or file_path.is_dir():
+        try:
+            public_root = PUBLIC_DIR.resolve()
+            decoded_path = unquote(path, errors='strict')
+            file_path = (public_root / ('index.html' if decoded_path in ('', '/') else decoded_path.lstrip('/'))).resolve()
+            file_path.relative_to(public_root)
+            if not file_path.is_file():
+                raise ValueError('Not a public file')
+            data = file_path.read_bytes()
+        except (ValueError, OSError, RuntimeError, UnicodeError):
             self.send_error(404)
             return
         mime = 'text/plain'
@@ -168,7 +190,6 @@ class Handler(BaseHTTPRequestHandler):
             mime = 'text/css; charset=utf-8'
         elif file_path.suffix == '.js':
             mime = 'application/javascript; charset=utf-8'
-        data = file_path.read_bytes()
         self.send_response(200)
         self.send_header('Content-Type', mime)
         self.send_header('Content-Length', str(len(data)))
@@ -253,10 +274,15 @@ class Handler(BaseHTTPRequestHandler):
             if not user or user['role'] != 'user':
                 conn.close()
                 return self._json(401, {'error': 'Unauthorized'})
-            hall_id = int(body.get('hall_id', 0))
-            table_number = int(body.get('table_number', 0))
-            start_time = body.get('start_time', '')
-            hours = int(body.get('hours', 0))
+            try:
+                hall_id = int(body.get('hall_id', 0))
+                table_number = int(body.get('table_number', 0))
+                hours = int(body.get('hours', 0))
+                start_dt = parse_reservation_time(body.get('start_time'))
+                end_dt = start_dt + timedelta(hours=hours)
+            except (ValueError, TypeError, OverflowError):
+                conn.close()
+                return self._json(400, {'error': 'Invalid reservation data; start_time must be RFC3339 with timezone'})
             if hall_id <= 0 or table_number <= 0 or hours <= 0:
                 conn.close()
                 return self._json(400, {'error': 'Invalid reservation data'})
@@ -264,11 +290,8 @@ class Handler(BaseHTTPRequestHandler):
             if not hall or table_number > hall['table_count']:
                 conn.close()
                 return self._json(400, {'error': 'Table not available'})
-            start_dt = datetime.fromisoformat(start_time)
-            from datetime import timedelta
-            end_dt = start_dt + timedelta(hours=hours)
             overlap = cur.execute('''SELECT id FROM reservations WHERE hall_id=? AND table_number=?
-                                     AND NOT (end_time <= ? OR start_time >= ?)''',
+                                     AND NOT (julianday(end_time) <= julianday(?) OR julianday(start_time) >= julianday(?))''',
                                   (hall_id, table_number, start_dt.isoformat(), end_dt.isoformat())).fetchone()
             if overlap:
                 conn.close()

@@ -97,14 +97,24 @@ async function loadMyReservations() {
 
 async function loadOwnerReservations() {
   const out = await api('/owner/reservations');
-  ownerWrap.innerHTML = (out.reservations || []).map((r) => `
-    <div class="res">
-      <strong>${r.hall_name}</strong> | მაგიდა #${r.table_number}<br/>
-      კლიენტი: ${r.customer_name} (${r.customer_email})<br/>
-      ${new Date(r.start_time).toLocaleString()} - ${new Date(r.end_time).toLocaleString()}<br/>
-      ${r.total_price}₾ | ${r.payment_status}
-    </div>
-  `).join('') || '<p class="muted">ჯავშნები არ არის.</p>';
+  const cards = (out.reservations || []).map((r) => {
+    const card = document.createElement('div');
+    card.className = 'res';
+    const title = document.createElement('strong');
+    title.textContent = r.hall_name;
+    card.append(title, ` | მაგიდა #${r.table_number}`, document.createElement('br'),
+      `კლიენტი: ${r.customer_name} (${r.customer_email})`, document.createElement('br'),
+      `${new Date(r.start_time).toLocaleString()} - ${new Date(r.end_time).toLocaleString()}`,
+      document.createElement('br'), `${r.total_price}₾ | ${r.payment_status}`);
+    return card;
+  });
+  if (!cards.length) {
+    const empty = document.createElement('p');
+    empty.className = 'muted';
+    empty.textContent = 'ჯავშნები არ არის.';
+    cards.push(empty);
+  }
+  ownerWrap.replaceChildren(...cards);
 }
 
 el('locBtn').onclick = () => {
