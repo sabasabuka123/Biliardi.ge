@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ka">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Biliardi.ge</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Biliardi.ge</h1>
+    <p>იპოვე ახლომდებარე საბილიარდო, დაჯავშნე მაგიდა, გადაიხადე ონლაინ.</p>
+  </header>
+
+  <main>
+    <section class="card" id="authSection">
+      <h2>ავტორიზაცია</h2>
+      <div class="grid2">
+        <form id="registerForm">
+          <h3>რეგისტრაცია (მომხმარებელი)</h3>
+          <input required name="name" placeholder="სახელი" />
+          <input required type="email" name="email" placeholder="Email" />
+          <input required type="password" name="password" placeholder="პაროლი (მინ.6)" />
+          <button>რეგისტრაცია</button>
+        </form>
+        <form id="loginForm">
+          <h3>შესვლა (User / Owner)</h3>
+          <input required type="email" name="email" placeholder="Email" />
+          <input required type="password" name="password" placeholder="პაროლი" />
+          <button>შესვლა</button>
+          <small>Owner demo: owner1@biliardi.ge / Owner123!</small>
+        </form>
+      </div>
+      <p id="authMsg"></p>
+    </section>
+
+    <section class="card hidden" id="userPanel">
+      <h2>მომხმარებლის პანელი</h2>
+      <div class="toolbar">
+        <button id="locBtn">ახლომდებარე საბილიარდოები</button>
+        <button id="refreshReservations">ჩემი ჯავშნები</button>
+      </div>
+      <div id="halls"></div>
+      <h3>ჩემი ჯავშნები</h3>
+      <div id="myReservations"></div>
+    </section>
+
+    <section class="card hidden" id="ownerPanel">
+      <h2>მეპატრონის პანელი</h2>
+      <p>გააკონტროლე შენი დარბაზის ყველა დაჯავშნილი მაგიდა.</p>
+      <button id="refreshOwner">განახლება</button>
+      <div id="ownerReservations"></div>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
